@@ -35,8 +35,19 @@ app.get('/', function(req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
 })
 
-app.get('/api/shorturl', function(req,res) {
-  res.send("Get route working")
+app.get('/api/shorturl/:shorturl', async (req,res) => {
+  try {
+    const shorturl = req.params.shorturl
+    const document = await ShortUrl.findOne({short_url: shorturl}).exec()
+    if (!document) {
+      res.json({error: "no matching short url"})
+    } else {
+      res.redirect(document['original_url'])
+    }   
+  } catch (err) {
+    console.log(err)
+    return
+  } 
 })
 
 app.post('/api/shorturl', async (req, res) => {
@@ -49,29 +60,30 @@ app.post('/api/shorturl', async (req, res) => {
       console.log("valid url")
     })
     // Get all entries from Db, sort, add one to highest short_url for new short_url
-    ShortUrl.find({}).sort({ 'short_url': -1 }).exec(function (err, result) {
+    ShortUrl.find({})
+      .sort({ 'short_url': -1 })
+      .exec(function (err, result) {
 
-      if (err) { console.log(err)} ;
-      // Set short_url
-      const newShortUrl = (result.length !== 0) ? result[0]['short_url'] + 1 : 1
-      // Response object
-      const urlObj = {
-        original_url: inputUrl,
-        short_url: newShortUrl
-      }
-      // Create Db document
-      const urlDoc = new ShortUrl(urlObj)
-      urlDoc.save()
-      // Send response
-      res.json(urlObj)
+        if (err) { console.log(err)} ;
+        // Set short_url
+        const newShortUrl = (result.length !== 0) ? result[0]['short_url'] + 1 : 1
+        // Response object
+        const urlObj = {
+          original_url: inputUrl,
+          short_url: newShortUrl
+        }
+        // Create Db document
+        const urlDoc = new ShortUrl(urlObj)
+        urlDoc.save()
+        // Send response
+        res.json(urlObj)
     })
     
   } catch (err) {
     console.log(err)
     res.json({error: 'invalid url'})
     return
-  }
-  
+  } 
 })
 
 // Basic Configuration
@@ -90,4 +102,3 @@ const start = async () => {
 }
 
 start()
-
