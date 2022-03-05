@@ -4,10 +4,10 @@ const cors = require('cors')
 const mongoose = require('mongoose')
 const { Schema } = mongoose
 const bodyParser = require('body-parser')
-// const { json } = require('body-parser')
 const dns = require('dns')
 
 const app = express()
+app.use(cors());
 
 // Connect DB
 const connectDB = (url) => {
@@ -20,8 +20,6 @@ const shortUrlSchema = new Schema ({
   short_url: Number,
 })
 const ShortUrl = mongoose.model('ShortUrl', shortUrlSchema)
-
-app.use(cors());
 
 // Static
 app.use('/public', express.static(`${process.cwd()}/public`));
@@ -38,6 +36,10 @@ app.get('/', function(req, res) {
 app.get('/api/shorturl/:shorturl', async (req,res) => {
   try {
     const shorturl = req.params.shorturl
+    // check for undefind or empty shorturl
+    if (!shorturl || shorturl == 'undefined') { 
+      return res.json({error: "no matching short url"}) 
+    }
     const document = await ShortUrl.findOne({short_url: shorturl}).exec()
     if (!document) {
       res.json({error: "no matching short url"})
@@ -55,7 +57,8 @@ app.post('/api/shorturl', async (req, res) => {
   try {
     // Create new URL object ( Node.js) so that I can extract only host ( i.e. no protocol or paths) using URL.host.
     const inputUrl = new URL(url)
-    // Check if url is valid
+    // Check if url is http and valid
+    if ( !inputUrl.protocol.startsWith('http') ) { throw new Error('not http address')}
     dns.lookup( inputUrl.host, () => {
       console.log("valid url")
     })
